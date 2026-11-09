@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CineWick - Generador Master con Multi-Vista Previa Automática</title>
+  <title>CineWick - Generador Master con Multi-Vista Previa Manual</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -42,7 +42,7 @@
             <h1 class="text-xl font-bold tracking-tight text-white">CineWick</h1>
             <span class="text-[10px] bg-brand-500/20 text-brand-400 border border-brand-500/30 px-2 py-0.5 rounded-full font-mono">cinewick.shop</span>
           </div>
-          <p class="text-xs text-slate-400">Generador Master con Multi-Vista Previa en Tiempo Real</p>
+          <p class="text-xs text-slate-400">Generador Master con Multi-Vista Previa y Botón Manual</p>
         </div>
       </div>
       <div class="flex items-center space-x-2">
@@ -99,6 +99,12 @@
             <input type="text" id="imdbIdInput" value="tt0137523" placeholder="tt0137523" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200 font-mono">
           </div>
         </div>
+
+        <!-- Botón Manual para Actualizar Vistas Previas -->
+        <button id="manualRefreshBtn" type="button" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-medium text-xs py-3 rounded-xl transition shadow-lg flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-arrows-rotate text-sm"></i>
+          <span>Actualizar Vistas Previas y Código</span>
+        </button>
       </div>
 
       <!-- SECCIÓN DE TEMPORADAS Y EPISODIOS -->
@@ -132,9 +138,9 @@
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-sm font-semibold uppercase tracking-wider text-brand-400 flex items-center">
-              <i class="fa-solid fa-tv mr-2"></i> Multi-Vista Previa en Vivo (3 Servidores)
+              <i class="fa-solid fa-tv mr-2"></i> Multi-Vista Previa (3 Servidores)
             </h2>
-            <p class="text-[11px] text-slate-400 mt-0.5">Se actualiza automáticamente al cambiar de título, temporada, episodio o ID.</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">Haz clic en "Actualizar Vistas Previas" tras cambiar IDs, temporadas o capítulos.</p>
           </div>
         </div>
 
@@ -244,6 +250,7 @@
     const imdbIdInput = document.getElementById('imdbIdInput');
     const searchInput = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
+    const manualRefreshBtn = document.getElementById('manualRefreshBtn');
     const codeOutput = document.getElementById('codeOutput');
     const copyCodeBtn = document.getElementById('copyCodeBtn');
     const formatHtmlBtn = document.getElementById('formatHtmlBtn');
@@ -309,7 +316,7 @@
         card.addEventListener('click', () => {
           state.episode = e;
           renderEpisodesGrid();
-          updateGenerator(); // Actualiza vistas previas y código automáticamente
+          updateGenerator();
         });
 
         episodesGrid.appendChild(card);
@@ -404,8 +411,8 @@
     });
 
     function getPlayerWebUrlForServer(srvKey) {
-      const mainId = state.mediaId.trim();
-      const imdb = state.imdbId.trim();
+      const mainId = mediaIdInput.value.trim() || state.mediaId;
+      const imdb = imdbIdInput.value.trim() || state.imdbId;
       const s = state.season;
       const e = state.episode;
       let rawUrl = '';
@@ -440,6 +447,10 @@
     }
 
     function updateGenerator() {
+      // Sincronizar estados desde los inputs manuales antes de refrescar
+      state.mediaId = mediaIdInput.value.trim() || state.mediaId;
+      state.imdbId = imdbIdInput.value.trim() || state.imdbId;
+
       document.getElementById('previewIframe-vimeus').src = getPlayerWebUrlForServer('vimeus');
       document.getElementById('previewIframe-embed69').src = getPlayerWebUrlForServer('embed69');
       document.getElementById('previewIframe-unlimplay').src = getPlayerWebUrlForServer('unlimplay');
@@ -458,7 +469,6 @@
       typeMovieBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition bg-brand-600 text-white shadow';
       typeTvBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white';
       tvSelectorSection.classList.add('hidden');
-      updateGenerator();
     });
 
     typeTvBtn.addEventListener('click', () => {
@@ -466,21 +476,11 @@
       typeTvBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition bg-brand-600 text-white shadow';
       typeMovieBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white';
       tvSelectorSection.classList.remove('hidden');
-      fetchSeasonEpisodeCount(state.mediaId, state.season);
+      fetchSeasonEpisodeCount(mediaIdInput.value, state.season);
     });
 
-    // Actualización en tiempo real al escribir manualmente en los inputs
-    mediaIdInput.addEventListener('input', (e) => {
-      state.mediaId = e.target.value;
-      if (state.mediaType === 'tv') {
-        fetchSeasonEpisodeCount(state.mediaId, state.season);
-      } else {
-        updateGenerator();
-      }
-    });
-
-    imdbIdInput.addEventListener('input', (e) => {
-      state.imdbId = e.target.value;
+    // Acción del botón manual de actualización
+    manualRefreshBtn.addEventListener('click', () => {
       updateGenerator();
     });
 
@@ -521,6 +521,7 @@
       }, 2500);
     });
 
+    // Carga inicial al abrir la página
     updateGenerator();
   </script>
 </body>
