@@ -82,7 +82,7 @@
           <label class="block text-xs font-medium text-slate-400 mb-1">Servidor de Contenido (Latino / Español)</label>
           <select id="serverSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-200">
             <option value="vimeus">Vimeus (Recomendado Latino)</option>
-            <option value="embed69">Embed69 (Requiere IMDb ID)</option>
+            <option value="embed69">Embed69 (Usa IMDb ID)</option>
             <option value="unlimplay">Unlimplay (TMDB ID)</option>
           </select>
         </div>
@@ -239,6 +239,7 @@
       mediaType: 'movie',
       server: 'vimeus',
       mediaId: '550',
+      imdbId: 'tt0137523', // ID IMDb independiente para embed69
       season: 1,
       episode: 1,
       responsive: true,
@@ -280,53 +281,59 @@
     const deviceMobileBtn = document.getElementById('deviceMobileBtn');
     const resetFormBtn = document.getElementById('resetFormBtn');
 
-    // Construcción de la URL del Servidor en Español / Latino
-    function getRawServerUrl() {
-      const id = state.mediaId.trim();
+    // Construcción de la URL del Servidor interno y el ID principal de hash
+    function getRawServerUrlAndHashId() {
+      const mainId = state.mediaId.trim(); // ID principal para J. Casas
       const s = state.season;
       const e = state.episode;
 
+      let rawUrl = '';
+      let hashId = mainId;
+
       switch(state.server) {
         case 'vimeus':
-          return state.mediaType === 'movie'
-            ? `https://vimeus.net/e/movie?tmdb=${id}&${VIMEUS_PARAMS}`
-            : `https://vidsrc.net/e/serie?tmdb=${id}&se=${s}&ep=${e}&${VIMEUS_PARAMS}`;
+          rawUrl = state.mediaType === 'movie'
+            ? `https://vimeus.net/e/movie?tmdb=${mainId}&${VIMEUS_PARAMS}`
+            : `https://vidsrc.net/e/serie?tmdb=${mainId}&se=${s}&ep=${e}&${VIMEUS_PARAMS}`;
+          break;
 
         case 'embed69':
+          // El ID de IMDb se usa exclusivamente dentro de la URL de embed69, 
+          // pero el hash de j.casas mantiene el mainId ingresado.
+          const imdb = state.imdbId.trim();
           const epStr = String(e).padStart(2, '0');
-          return state.mediaType === 'movie'
-            ? `https://embed69.org/f/${id}`
-            : `https://embed69.org/f/${id}-${s}x${epStr}`;
+          rawUrl = state.mediaType === 'movie'
+            ? `https://embed69.org/f/${imdb}`
+            : `https://embed69.org/f/${imdb}-${s}x${epStr}`;
+          break;
 
         case 'unlimplay':
-          return state.mediaType === 'movie'
-            ? `https://unlimplay.com/f/embed/movie/${id}`
-            : `https://unlimplay.com/f/embed/tv/${id}/${s}/${e}`;
-
-        default:
-          return '';
+          rawUrl = state.mediaType === 'movie'
+            ? `https://unlimplay.com/f/embed/movie/${mainId}`
+            : `https://unlimplay.com/f/embed/tv/${mainId}/${s}/${e}`;
+          break;
       }
+
+      return { rawUrl, hashId };
     }
 
-    // Hash Base64 compatible con playerweb
+    // Hash Base64 compatible con playerweb usando el ID principal para j.casas
     function buildPlayerWebUrl() {
-      const rawUrl = getRawServerUrl();
+      const { rawUrl, hashId } = getRawServerUrlAndHashId();
       const b64Url = btoa(rawUrl);
-      const id = state.mediaId.trim();
       
       if (state.mediaType === 'movie') {
-        return `${PLAYERWEB_BASE}#movie-${id}-${b64Url}`;
+        return `${PLAYERWEB_BASE}#movie-${hashId}-${b64Url}`;
       } else {
         const s = state.season;
         const e = state.episode;
-        return `${PLAYERWEB_BASE}#tv-${id}-${s}-${e}-${b64Url}`;
+        return `${PLAYERWEB_BASE}#tv-${hashId}-${s}-${e}-${b64Url}`;
       }
     }
 
     function updateGenerator() {
       const playerUrl = buildPlayerWebUrl();
 
-      // Recarga el iframe de vista previa
       previewIframe.src = playerUrl;
 
       if (state.responsive) {
@@ -375,23 +382,19 @@
     serverSelect.addEventListener('change', (e) => {
       state.server = e.target.value;
       if (state.server === 'embed69') {
-        mediaIdLabel.innerText = "IMDb ID (ej: tt0137523)";
-        if (state.mediaId === '550') {
-          mediaIdInput.value = 'tt0137523';
-          state.mediaId = 'tt0137523';
-        }
+        mediaIdLabel.innerText = "TMDB ID (Hash J.Casas) / IMDb (Embed69)";
       } else {
         mediaIdLabel.innerText = "TMDB ID";
-        if (state.mediaId === 'tt0137523') {
-          mediaIdInput.value = '550';
-          state.mediaId = '550';
-        }
       }
       updateGenerator();
     });
 
     mediaIdInput.addEventListener('input', (e) => {
       state.mediaId = e.target.value;
+      // Si estamos en embed69, por comodidad también actualizamos el imdbId por defecto si coincide
+      if(state.server === 'embed69' && !state.imdbId.startsWith('tt')) {
+        state.imdbId = e.target.value;
+      }
       updateGenerator();
     });
 
@@ -405,7 +408,6 @@
       updateGenerator();
     });
 
-    // Botón manual de recarga de la vista previa
     refreshPreviewBtn.addEventListener('click', () => {
       previewIframe.src = '';
       setTimeout(() => {
