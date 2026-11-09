@@ -44,7 +44,7 @@
             <h1 class="text-xl font-bold tracking-tight text-white">CineWick</h1>
             <span class="text-[10px] bg-brand-500/20 text-brand-400 border border-brand-500/30 px-2 py-0.5 rounded-full font-mono">cinewick.shop</span>
           </div>
-          <p class="text-xs text-slate-400">Generador Embed con pasarela PlayerWeb (Latino/Español)</p>
+          <p class="text-xs text-slate-400">Generador Master con Buscador TMDB y PlayerWeb</p>
         </div>
       </div>
       <div class="flex items-center space-x-2">
@@ -77,6 +77,17 @@
           </button>
         </div>
 
+        <!-- Buscador TMDB por Nombre -->
+        <div class="relative">
+          <label class="block text-xs font-medium text-slate-400 mb-1">Buscar por Nombre (TMDB)</label>
+          <div class="relative">
+            <input type="text" id="searchInput" placeholder="Escribe el nombre de la película o serie..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-200">
+            <span class="absolute right-3 top-3 text-slate-500 text-xs"><i class="fa-solid fa-magnifying-glass"></i></span>
+          </div>
+          <!-- Resultados flotantes -->
+          <div id="searchResults" class="absolute left-0 right-0 mt-1 bg-slate-950 border border-slate-800 rounded-xl shadow-2xl z-50 max-h-56 overflow-y-auto hidden"></div>
+        </div>
+
         <!-- Servidor / Motor Latino -->
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-1">Servidor de Contenido (Latino / Español)</label>
@@ -88,10 +99,16 @@
         </div>
 
         <!-- IDs Input Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="standardInputs">
+        <div class="grid grid-cols-1 gap-3">
           <div>
             <label id="mediaIdLabel" class="block text-xs font-medium text-slate-400 mb-1">TMDB ID</label>
             <input type="text" id="mediaIdInput" value="550" placeholder="Ej: 550" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200 font-mono">
+          </div>
+
+          <!-- Campo Extra para IMDb ID (Solo visible si se selecciona Embed69) -->
+          <div id="imdbInputContainer" class="hidden">
+            <label class="block text-xs font-medium text-brand-400 mb-1">IMDb ID para Embed69 (ej: tt0137523)</label>
+            <input type="text" id="imdbIdInput" placeholder="tt0137523" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200 font-mono">
           </div>
           
           <!-- TV Fields (Season & Episode) -->
@@ -232,6 +249,7 @@
   </div>
 
   <script>
+    const API_KEY = '51800c8d9e13631a7ded6f17f363e7a5';
     const PLAYERWEB_BASE = "https://jcasastech88-tech.github.io/playerweb/";
     const VIMEUS_PARAMS = "view_key=Gy5wv-mGF6Ao_Sim1TU7MPrLGsRkiGeiuWCiuVsmbu8&title=Cinewick&theme=blue&loader=v1&playUI=v3&splash=v2&autoplay=1";
 
@@ -239,7 +257,7 @@
       mediaType: 'movie',
       server: 'vimeus',
       mediaId: '550',
-      imdbId: 'tt0137523', // ID IMDb independiente para embed69
+      imdbId: 'tt0137523',
       season: 1,
       episode: 1,
       responsive: true,
@@ -258,9 +276,12 @@
     const tvFields = document.getElementById('tvFields');
     const serverSelect = document.getElementById('serverSelect');
     const mediaIdInput = document.getElementById('mediaIdInput');
-    const mediaIdLabel = document.getElementById('mediaIdLabel');
+    const imdbInputContainer = document.getElementById('imdbInputContainer');
+    const imdbIdInput = document.getElementById('imdbIdInput');
     const seasonInput = document.getElementById('seasonInput');
     const episodeInput = document.getElementById('episodeInput');
+    const searchInput = document.getElementById('searchInput');
+    const searchResults = document.getElementById('searchResults');
     const refreshPreviewBtn = document.getElementById('refreshPreviewBtn');
     const responsiveToggle = document.getElementById('responsiveToggle');
     const aspectRatioGroup = document.getElementById('aspectRatioGroup');
@@ -281,14 +302,71 @@
     const deviceMobileBtn = document.getElementById('deviceMobileBtn');
     const resetFormBtn = document.getElementById('resetFormBtn');
 
+    // Buscador TMDB en vivo
+    let searchTimeout = null;
+    searchInput.addEventListener('input', (e) => {
+      const q = e.target.value.trim();
+      clearTimeout(searchTimeout);
+      if (q.length < 3) {
+        searchResults.classList.add('hidden');
+        return;
+      }
+      searchTimeout = setTimeout(async () => {
+        try {
+          const tmdbType = state.mediaType === 'tv' ? 'tv' : 'movie';
+          const res = await fetch(`https://api.themoviedb.org/3/search/${tmdbType}?api_key=${API_KEY}&language=es-ES&query=${encodeURIComponent(q)}`);
+          const data = await res.json();
+          searchResults.innerHTML = '';
+          if (!data.results || data.results.length === 0) {
+            searchResults.innerHTML = '<div class="p-3 text-xs text-slate-400">No se encontraron resultados.</div>';
+          } else {
+            data.results.slice(0, 5).forEach(item => {
+              const div = document.createElement('div');
+              div.className = 'p-2.5 hover:bg-slate-900 cursor-pointer text-xs border-b border-slate-900 flex justify-between items-center text-slate-200';
+              const title = item.title || item.name;
+              const date = (item.release_date || item.first_air_date || '').split('-')[0];
+              div.innerHTML = `<span>${title} (${date})</span> <span class="font-mono text-brand-400 text-[10px]">ID: ${item.id}</span>`;
+              div.addEventListener('click', async () => {
+                mediaIdInput.value = item.id;
+                state.mediaId = String(item.id);
+                searchInput.value = title;
+                searchResults.classList.add('hidden');
+                
+                // Intentar buscar el IMDb ID automáticamente para embed69
+                try {
+                  const detailRes = await fetch(`https://api.themoviedb.org/3/${tmdbType}/${item.id}/external_ids?api_key=${API_KEY}`);
+                  const detailData = await detailRes.json();
+                  if (detailData && detailData.imdb_id) {
+                    imdbIdInput.value = detailData.imdb_id;
+                    state.imdbId = detailData.imdb_id;
+                  }
+                } catch(err) {}
+                
+                updateGenerator();
+              });
+              searchResults.appendChild(div);
+            });
+          }
+          searchResults.classList.remove('hidden');
+        } catch(err) {
+          console.error(err);
+        }
+      }, 400);
+    });
+
+    // Ocultar resultados al hacer clic fuera
+    document.addEventListener('click', (e) => {
+      if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+        searchResults.classList.add('hidden');
+      }
+    });
+
     // Construcción de la URL del Servidor interno y el ID principal de hash
     function getRawServerUrlAndHashId() {
-      const mainId = state.mediaId.trim(); // ID principal para J. Casas
+      const mainId = state.mediaId.trim();
       const s = state.season;
       const e = state.episode;
-
       let rawUrl = '';
-      let hashId = mainId;
 
       switch(state.server) {
         case 'vimeus':
@@ -298,8 +376,6 @@
           break;
 
         case 'embed69':
-          // El ID de IMDb se usa exclusivamente dentro de la URL de embed69, 
-          // pero el hash de j.casas mantiene el mainId ingresado.
           const imdb = state.imdbId.trim();
           const epStr = String(e).padStart(2, '0');
           rawUrl = state.mediaType === 'movie'
@@ -314,10 +390,10 @@
           break;
       }
 
-      return { rawUrl, hashId };
+      return { rawUrl, hashId: mainId };
     }
 
-    // Hash Base64 compatible con playerweb usando el ID principal para j.casas
+    // Hash Base64 compatible con playerweb
     function buildPlayerWebUrl() {
       const { rawUrl, hashId } = getRawServerUrlAndHashId();
       const b64Url = btoa(rawUrl);
@@ -333,7 +409,6 @@
 
     function updateGenerator() {
       const playerUrl = buildPlayerWebUrl();
-
       previewIframe.src = playerUrl;
 
       if (state.responsive) {
@@ -382,19 +457,20 @@
     serverSelect.addEventListener('change', (e) => {
       state.server = e.target.value;
       if (state.server === 'embed69') {
-        mediaIdLabel.innerText = "TMDB ID (Hash J.Casas) / IMDb (Embed69)";
+        imdbInputContainer.classList.remove('hidden');
       } else {
-        mediaIdLabel.innerText = "TMDB ID";
+        imdbInputContainer.classList.add('hidden');
       }
       updateGenerator();
     });
 
     mediaIdInput.addEventListener('input', (e) => {
       state.mediaId = e.target.value;
-      // Si estamos en embed69, por comodidad también actualizamos el imdbId por defecto si coincide
-      if(state.server === 'embed69' && !state.imdbId.startsWith('tt')) {
-        state.imdbId = e.target.value;
-      }
+      updateGenerator();
+    });
+
+    imdbIdInput.addEventListener('input', (e) => {
+      state.imdbId = e.target.value;
       updateGenerator();
     });
 
@@ -410,9 +486,7 @@
 
     refreshPreviewBtn.addEventListener('click', () => {
       previewIframe.src = '';
-      setTimeout(() => {
-        updateGenerator();
-      }, 50);
+      setTimeout(() => { updateGenerator(); }, 50);
     });
 
     responsiveToggle.addEventListener('change', (e) => {
@@ -438,30 +512,11 @@
       });
     });
 
-    widthInput.addEventListener('input', (e) => {
-      state.width = e.target.value;
-      updateGenerator();
-    });
-
-    heightInput.addEventListener('input', (e) => {
-      state.height = e.target.value;
-      updateGenerator();
-    });
-
-    allowFullscreenCheck.addEventListener('change', (e) => {
-      state.allowFullscreen = e.target.checked;
-      updateGenerator();
-    });
-
-    lazyLoadingCheck.addEventListener('change', (e) => {
-      state.lazyLoading = e.target.checked;
-      updateGenerator();
-    });
-
-    sandboxCheck.addEventListener('change', (e) => {
-      state.sandbox = e.target.checked;
-      updateGenerator();
-    });
+    widthInput.addEventListener('input', (e) => { state.width = e.target.value; updateGenerator(); });
+    heightInput.addEventListener('input', (e) => { state.height = e.target.value; updateGenerator(); });
+    allowFullscreenCheck.addEventListener('change', (e) => { state.allowFullscreen = e.target.checked; updateGenerator(); });
+    lazyLoadingCheck.addEventListener('change', (e) => { state.lazyLoading = e.target.checked; updateGenerator(); });
+    sandboxCheck.addEventListener('change', (e) => { state.sandbox = e.target.checked; updateGenerator(); });
 
     formatHtmlBtn.addEventListener('click', () => {
       state.format = 'html';
@@ -493,9 +548,12 @@
 
     resetFormBtn.addEventListener('click', () => {
       mediaIdInput.value = '550';
+      imdbIdInput.value = 'tt0137523';
       seasonInput.value = '1';
       episodeInput.value = '1';
+      searchInput.value = '';
       state.mediaId = '550';
+      state.imdbId = 'tt0137523';
       state.season = 1;
       state.episode = 1;
       updateGenerator();
@@ -504,10 +562,8 @@
     copyCodeBtn.addEventListener('click', () => {
       codeOutput.select();
       navigator.clipboard.writeText(codeOutput.value);
-
       const toast = document.getElementById('toast');
       toast.classList.remove('opacity-0', 'translate-y-2', 'pointer-events-none');
-      
       setTimeout(() => {
         toast.classList.add('opacity-0', 'translate-y-2', 'pointer-events-none');
       }, 2500);
