@@ -272,18 +272,44 @@
     const deviceMobileBtn = document.getElementById('deviceMobileBtn');
     const resetFormBtn = document.getElementById('resetFormBtn');
 
-    function buildPlayerWebUrl() {
-      const params = new URLSearchParams();
-      params.append('type', state.mediaType);
-      params.append('id', state.mediaId.trim());
-      
-      if (state.mediaType === 'tv') {
-        params.append('s', state.season);
-        params.append('e', state.episode);
+    function getRawServerUrl() {
+      const id = state.mediaId.trim();
+      const s = state.season;
+      const e = state.episode;
+
+      switch(state.server) {
+        case 'vidsrc_to':
+          return state.mediaType === 'movie' 
+            ? `https://vidsrc.to/embed/movie/${id}`
+            : `https://vidsrc.to/embed/tv/${id}/${s}/${e}`;
+        case 'vidsrc_me':
+          return state.mediaType === 'movie'
+            ? `https://vidsrc.me/embed/movie?imdb=${id}`
+            : `https://vidsrc.me/embed/tv?imdb=${id}&season=${s}&episode=${e}`;
+        case 'embed_su':
+          return state.mediaType === 'movie'
+            ? `https://embed.su/embed/movie/${id}`
+            : `https://embed.su/embed/tv/${id}/${s}/${e}`;
+        case 'embed2':
+          return state.mediaType === 'movie'
+            ? `https://www.2embed.cc/embed/${id}`
+            : `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`;
+        default:
+          return '';
       }
+    }
+
+    function buildPlayerWebUrl() {
+      const rawUrl = getRawServerUrl();
+      const id = state.mediaId.trim();
       
-      params.append('server', state.server);
-      return `${PLAYERWEB_BASE}?${params.toString()}`;
+      if (state.mediaType === 'movie') {
+        return `${PLAYERWEB_BASE}#movie-${id}-${rawUrl}`;
+      } else {
+        const s = state.season;
+        const e = state.episode;
+        return `${PLAYERWEB_BASE}#tv-${id}-${s}-${e}-${rawUrl}`;
+      }
     }
 
     function updateGenerator() {
