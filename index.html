@@ -44,7 +44,7 @@
             <h1 class="text-xl font-bold tracking-tight text-white">CineWick</h1>
             <span class="text-[10px] bg-brand-500/20 text-brand-400 border border-brand-500/30 px-2 py-0.5 rounded-full font-mono">cinewick.shop</span>
           </div>
-          <p class="text-xs text-slate-400">Generador Master con Grid Elegante de Episodios</p>
+          <p class="text-xs text-slate-400">Generador Master con actualización automática en vivo</p>
         </div>
       </div>
       <div class="flex items-center space-x-2">
@@ -119,7 +119,7 @@
         </button>
       </div>
 
-      <!-- SECCIÓN ELEGANTE DE TEMPORADAS Y EPISODIOS (SOLO SERIES) -->
+      <!-- SECCIÓN DE TEMPORADAS Y EPISODIOS -->
       <div id="tvSelectorSection" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold uppercase tracking-wider text-brand-400 flex items-center">
@@ -131,18 +131,13 @@
         <!-- Selector Horizontal de Temporadas -->
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-1.5">Seleccionar Temporada</label>
-          <div id="seasonsPillsContainer" class="flex space-x-2 overflow-x-auto pb-2 scrollbar-thin">
-            <!-- Cargadas dinámicamente -->
-            <button type="button" class="season-pill active px-3.5 py-1.5 rounded-xl text-xs font-medium border border-brand-500 bg-brand-500/10 text-brand-400 flex-shrink-0 transition">Temporada 1</button>
-          </div>
+          <div id="seasonsPillsContainer" class="flex space-x-2 overflow-x-auto pb-2 scrollbar-thin"></div>
         </div>
 
         <!-- Grid Elegante de Tarjetas de Episodios -->
         <div>
           <label class="block text-xs font-medium text-slate-400 mb-1.5">Episodio Activo</label>
-          <div id="episodesGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1">
-            <!-- Tarjetas de episodios generadas dinámicamente -->
-          </div>
+          <div id="episodesGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1"></div>
         </div>
       </div>
 
@@ -320,7 +315,7 @@
     const deviceMobileBtn = document.getElementById('deviceMobileBtn');
     const resetFormBtn = document.getElementById('resetFormBtn');
 
-    // Renderizar selector de Temporadas (Pills horizontales)
+    // Renderizar selector de Temporadas
     function renderSeasonsPills() {
       seasonsPillsContainer.innerHTML = '';
       for (let s = 1; s <= state.totalSeasons; s++) {
@@ -335,14 +330,14 @@
         btn.innerText = `Temporada ${s}`;
         btn.addEventListener('click', () => {
           state.season = s;
-          state.episode = 1; // reset a ep 1 al cambiar de temp
+          state.episode = 1; 
           fetchSeasonEpisodeCount(state.mediaId, s);
         });
         seasonsPillsContainer.appendChild(btn);
       }
     }
 
-    // Renderizar Grid Visual de Episodios (Tarjetas elegantes)
+    // Renderizar Grid de Episodios con actualización automática en vivo
     function renderEpisodesGrid() {
       episodesGrid.innerHTML = '';
       episodesCountBadge.innerText = `${state.episodesInSeason} Episodios`;
@@ -364,6 +359,7 @@
           <div class="text-xs font-semibold tracking-tight">Capítulo ${e}</div>
         `;
 
+        // Al hacer clic actualiza de inmediato el estado, la vista previa y el código generado
         card.addEventListener('click', () => {
           state.episode = e;
           renderEpisodesGrid();
@@ -374,7 +370,6 @@
       }
     }
 
-    // Obtener episodios reales desde TMDB si está disponible
     async function fetchSeasonEpisodeCount(tmdbId, seasonNum) {
       try {
         const res = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${seasonNum}?api_key=${API_KEY}&language=es-ES`);
@@ -385,14 +380,14 @@
           }
         }
       } catch(err) {
-        state.episodesInSeason = 12; // fallback
+        state.episodesInSeason = 12;
       }
       renderSeasonsPills();
       renderEpisodesGrid();
-      updateGenerator();
+      updateGenerator(); // Actualiza preview automáticamente al cambiar de temporada
     }
 
-    // Buscador TMDB en vivo
+    // Buscador TMDB en vivo con actualización automática inmediata
     let searchTimeout = null;
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.trim();
@@ -416,13 +411,14 @@
               const title = item.title || item.name;
               const date = (item.release_date || item.first_air_date || '').split('-')[0];
               div.innerHTML = `<span>${title} (${date})</span> <span class="font-mono text-brand-400 text-[10px]">ID: ${item.id}</span>`;
+              
+              // Al seleccionar una película o serie de la lista:
               div.addEventListener('click', async () => {
                 mediaIdInput.value = item.id;
                 state.mediaId = String(item.id);
                 searchInput.value = title;
                 searchResults.classList.add('hidden');
 
-                // Si es serie, consultar total de temporadas
                 if (state.mediaType === 'tv') {
                   try {
                     const tvRes = await fetch(`https://api.themoviedb.org/3/tv/${item.id}?api_key=${API_KEY}&language=es-ES`);
@@ -434,9 +430,10 @@
                     }
                   } catch(e) {}
                   fetchSeasonEpisodeCount(item.id, 1);
+                } else {
+                  updateGenerator(); // Actualiza automáticamente la vista previa de la película seleccionada
                 }
                 
-                // Buscar IMDb ID automáticamente para embed69
                 try {
                   const detailRes = await fetch(`https://api.themoviedb.org/3/${tmdbType}/${item.id}/external_ids?api_key=${API_KEY}`);
                   const detailData = await detailRes.json();
@@ -445,8 +442,6 @@
                     state.imdbId = detailData.imdb_id;
                   }
                 } catch(err) {}
-                
-                updateGenerator();
               });
               searchResults.appendChild(div);
             });
@@ -464,7 +459,6 @@
       }
     });
 
-    // Construcción de la URL del Servidor interno y el ID principal de hash
     function getRawServerUrlAndHashId() {
       const mainId = state.mediaId.trim();
       const s = state.season;
@@ -496,7 +490,6 @@
       return { rawUrl, hashId: mainId };
     }
 
-    // Hash Base64 compatible con playerweb
     function buildPlayerWebUrl() {
       const { rawUrl, hashId } = getRawServerUrlAndHashId();
       const b64Url = btoa(rawUrl);
@@ -540,7 +533,6 @@
       }
     }
 
-    // Event Listeners
     typeMovieBtn.addEventListener('click', () => {
       state.mediaType = 'movie';
       typeMovieBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition bg-brand-600 text-white shadow';
