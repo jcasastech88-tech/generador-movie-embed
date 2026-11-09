@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CineWick - Generador Master con Multi-Vista Previa</title>
+  <title>CineWick - Generador Master con Multi-Vista Previa Automática</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -42,7 +42,7 @@
             <h1 class="text-xl font-bold tracking-tight text-white">CineWick</h1>
             <span class="text-[10px] bg-brand-500/20 text-brand-400 border border-brand-500/30 px-2 py-0.5 rounded-full font-mono">cinewick.shop</span>
           </div>
-          <p class="text-xs text-slate-400">Comparador y Generador con Multi-Vista Previa Simultánea</p>
+          <p class="text-xs text-slate-400">Generador Master con Multi-Vista Previa en Tiempo Real</p>
         </div>
       </div>
       <div class="flex items-center space-x-2">
@@ -132,14 +132,10 @@
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-sm font-semibold uppercase tracking-wider text-brand-400 flex items-center">
-              <i class="fa-solid fa-tv mr-2"></i> Multi-Vista Previa Simultánea (3 Servidores)
+              <i class="fa-solid fa-tv mr-2"></i> Multi-Vista Previa en Vivo (3 Servidores)
             </h2>
-            <p class="text-[11px] text-slate-400 mt-0.5">Compara los tres reproductores en vivo y haz clic en "Elegir Servidor" para generar su código.</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">Se actualiza automáticamente al cambiar de título, temporada, episodio o ID.</p>
           </div>
-          <button id="refreshAllBtn" title="Recargar todos" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-xl border border-slate-700 transition flex items-center space-x-1.5">
-            <i class="fa-solid fa-arrows-rotate"></i>
-            <span>Actualizar</span>
-          </button>
         </div>
 
         <!-- Grid de 3 Reproductores -->
@@ -228,7 +224,7 @@
 
     const state = {
       mediaType: 'movie',
-      activeServer: 'vimeus', // Servidor activo para la exportación de código
+      activeServer: 'vimeus',
       mediaId: '550',
       imdbId: 'tt0137523',
       season: 1,
@@ -248,14 +244,12 @@
     const imdbIdInput = document.getElementById('imdbIdInput');
     const searchInput = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
-    const refreshAllBtn = document.getElementById('refreshAllBtn');
     const codeOutput = document.getElementById('codeOutput');
     const copyCodeBtn = document.getElementById('copyCodeBtn');
     const formatHtmlBtn = document.getElementById('formatHtmlBtn');
     const formatMdBtn = document.getElementById('formatMdBtn');
     const resetFormBtn = document.getElementById('resetFormBtn');
 
-    // Cambiar servidor activo para el código exportado
     window.selectActiveServer = function(srvKey) {
       state.activeServer = srvKey;
       document.querySelectorAll('.server-pick-btn').forEach(btn => {
@@ -270,7 +264,6 @@
       updateGenerator();
     };
 
-    // Renderizar Temporadas
     function renderSeasonsPills() {
       seasonsPillsContainer.innerHTML = '';
       for (let s = 1; s <= state.totalSeasons; s++) {
@@ -292,7 +285,6 @@
       }
     }
 
-    // Renderizar Grid de Episodios
     function renderEpisodesGrid() {
       episodesGrid.innerHTML = '';
       episodesCountBadge.innerText = `${state.episodesInSeason} Eps`;
@@ -317,7 +309,7 @@
         card.addEventListener('click', () => {
           state.episode = e;
           renderEpisodesGrid();
-          updateGenerator();
+          updateGenerator(); // Actualiza vistas previas y código automáticamente
         });
 
         episodesGrid.appendChild(card);
@@ -341,7 +333,6 @@
       updateGenerator();
     }
 
-    // Buscador TMDB en vivo
     let searchTimeout = null;
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.trim();
@@ -412,7 +403,6 @@
       }
     });
 
-    // Generador de URLs individuales por servidor
     function getPlayerWebUrlForServer(srvKey) {
       const mainId = state.mediaId.trim();
       const imdb = state.imdbId.trim();
@@ -450,12 +440,10 @@
     }
 
     function updateGenerator() {
-      // 1. Actualizar simultáneamente los 3 iframes de vista previa
       document.getElementById('previewIframe-vimeus').src = getPlayerWebUrlForServer('vimeus');
       document.getElementById('previewIframe-embed69').src = getPlayerWebUrlForServer('embed69');
       document.getElementById('previewIframe-unlimplay').src = getPlayerWebUrlForServer('unlimplay');
 
-      // 2. Generar el código final basado unicamente en el servidor seleccionado (activeServer)
       const selectedUrl = getPlayerWebUrlForServer(state.activeServer);
 
       if (state.format === 'html') {
@@ -481,6 +469,7 @@
       fetchSeasonEpisodeCount(state.mediaId, state.season);
     });
 
+    // Actualización en tiempo real al escribir manualmente en los inputs
     mediaIdInput.addEventListener('input', (e) => {
       state.mediaId = e.target.value;
       if (state.mediaType === 'tv') {
@@ -492,10 +481,6 @@
 
     imdbIdInput.addEventListener('input', (e) => {
       state.imdbId = e.target.value;
-      updateGenerator();
-    });
-
-    refreshAllBtn.addEventListener('click', () => {
       updateGenerator();
     });
 
