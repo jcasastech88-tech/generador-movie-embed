@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CineWick - Generador de Embeds PlayerWeb</title>
+  <title>CineWick - Generador Master de Embeds</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -44,7 +44,7 @@
             <h1 class="text-xl font-bold tracking-tight text-white">CineWick</h1>
             <span class="text-[10px] bg-brand-500/20 text-brand-400 border border-brand-500/30 px-2 py-0.5 rounded-full font-mono">cinewick.shop</span>
           </div>
-          <p class="text-xs text-slate-400">Generador Master con Buscador TMDB y PlayerWeb</p>
+          <p class="text-xs text-slate-400">Generador Master con Grid Elegante de Episodios</p>
         </div>
       </div>
       <div class="flex items-center space-x-2">
@@ -81,7 +81,7 @@
         <div class="relative">
           <label class="block text-xs font-medium text-slate-400 mb-1">Buscar por Nombre (TMDB)</label>
           <div class="relative">
-            <input type="text" id="searchInput" placeholder="Escribe el nombre de la película o serie..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-200">
+            <input type="text" id="searchInput" placeholder="Buscar título en TMDB..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-200">
             <span class="absolute right-3 top-3 text-slate-500 text-xs"><i class="fa-solid fa-magnifying-glass"></i></span>
           </div>
           <!-- Resultados flotantes -->
@@ -110,18 +110,6 @@
             <label class="block text-xs font-medium text-brand-400 mb-1">IMDb ID para Embed69 (ej: tt0137523)</label>
             <input type="text" id="imdbIdInput" placeholder="tt0137523" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200 font-mono">
           </div>
-          
-          <!-- TV Fields (Season & Episode) -->
-          <div id="tvFields" class="hidden grid grid-cols-2 gap-2">
-            <div>
-              <label class="block text-xs font-medium text-slate-400 mb-1">Temp. (S)</label>
-              <input type="number" id="seasonInput" value="1" min="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200 font-mono">
-            </div>
-            <div>
-              <label class="block text-xs font-medium text-slate-400 mb-1">Episodio (E)</label>
-              <input type="number" id="episodeInput" value="1" min="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200 font-mono">
-            </div>
-          </div>
         </div>
 
         <!-- Botón para forzar actualización/reinicio de Vista Previa -->
@@ -129,6 +117,33 @@
           <i class="fa-solid fa-arrows-rotate"></i>
           <span>Cargar / Reiniciar Vista Previa</span>
         </button>
+      </div>
+
+      <!-- SECCIÓN ELEGANTE DE TEMPORADAS Y EPISODIOS (SOLO SERIES) -->
+      <div id="tvSelectorSection" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-brand-400 flex items-center">
+            <i class="fa-solid fa-layer-group mr-2"></i> Temporadas y Episodios
+          </h2>
+          <span id="episodesCountBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full font-mono">12 Episodios</span>
+        </div>
+
+        <!-- Selector Horizontal de Temporadas -->
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1.5">Seleccionar Temporada</label>
+          <div id="seasonsPillsContainer" class="flex space-x-2 overflow-x-auto pb-2 scrollbar-thin">
+            <!-- Cargadas dinámicamente -->
+            <button type="button" class="season-pill active px-3.5 py-1.5 rounded-xl text-xs font-medium border border-brand-500 bg-brand-500/10 text-brand-400 flex-shrink-0 transition">Temporada 1</button>
+          </div>
+        </div>
+
+        <!-- Grid Elegante de Tarjetas de Episodios -->
+        <div>
+          <label class="block text-xs font-medium text-slate-400 mb-1.5">Episodio Activo</label>
+          <div id="episodesGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1">
+            <!-- Tarjetas de episodios generadas dinámicamente -->
+          </div>
+        </div>
       </div>
 
       <!-- Player Customization -->
@@ -260,6 +275,8 @@
       imdbId: 'tt0137523',
       season: 1,
       episode: 1,
+      totalSeasons: 1,
+      episodesInSeason: 12,
       responsive: true,
       aspectRatio: '16-9',
       width: '100%',
@@ -273,13 +290,14 @@
 
     const typeMovieBtn = document.getElementById('typeMovieBtn');
     const typeTvBtn = document.getElementById('typeTvBtn');
-    const tvFields = document.getElementById('tvFields');
+    const tvSelectorSection = document.getElementById('tvSelectorSection');
+    const seasonsPillsContainer = document.getElementById('seasonsPillsContainer');
+    const episodesGrid = document.getElementById('episodesGrid');
+    const episodesCountBadge = document.getElementById('episodesCountBadge');
     const serverSelect = document.getElementById('serverSelect');
     const mediaIdInput = document.getElementById('mediaIdInput');
     const imdbInputContainer = document.getElementById('imdbInputContainer');
     const imdbIdInput = document.getElementById('imdbIdInput');
-    const seasonInput = document.getElementById('seasonInput');
-    const episodeInput = document.getElementById('episodeInput');
     const searchInput = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
     const refreshPreviewBtn = document.getElementById('refreshPreviewBtn');
@@ -301,6 +319,78 @@
     const deviceDesktopBtn = document.getElementById('deviceDesktopBtn');
     const deviceMobileBtn = document.getElementById('deviceMobileBtn');
     const resetFormBtn = document.getElementById('resetFormBtn');
+
+    // Renderizar selector de Temporadas (Pills horizontales)
+    function renderSeasonsPills() {
+      seasonsPillsContainer.innerHTML = '';
+      for (let s = 1; s <= state.totalSeasons; s++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const isActive = s === Number(state.season);
+        btn.className = `px-3.5 py-1.5 rounded-xl text-xs font-medium border flex-shrink-0 transition ${
+          isActive 
+            ? 'border-brand-500 bg-brand-500/10 text-brand-400 font-semibold shadow-sm' 
+            : 'border-slate-800 bg-slate-950 text-slate-400 hover:text-slate-200'
+        }`;
+        btn.innerText = `Temporada ${s}`;
+        btn.addEventListener('click', () => {
+          state.season = s;
+          state.episode = 1; // reset a ep 1 al cambiar de temp
+          fetchSeasonEpisodeCount(state.mediaId, s);
+        });
+        seasonsPillsContainer.appendChild(btn);
+      }
+    }
+
+    // Renderizar Grid Visual de Episodios (Tarjetas elegantes)
+    function renderEpisodesGrid() {
+      episodesGrid.innerHTML = '';
+      episodesCountBadge.innerText = `${state.episodesInSeason} Episodios`;
+
+      for (let e = 1; e <= state.episodesInSeason; e++) {
+        const isActive = e === Number(state.episode);
+        const card = document.createElement('div');
+        card.className = `p-2.5 rounded-xl border cursor-pointer transition flex flex-col justify-between space-y-2 ${
+          isActive 
+            ? 'border-brand-500 bg-brand-600/20 text-white shadow-md shadow-brand-500/10' 
+            : 'border-slate-800/80 bg-slate-950 text-slate-300 hover:border-slate-700 hover:bg-slate-900'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-mono font-medium ${isActive ? 'text-brand-300' : 'text-slate-500'}">EP ${String(e).padStart(2, '0')}</span>
+            ${isActive ? '<i class="fa-solid fa-circle-play text-brand-400 text-xs animate-pulse"></i>' : ''}
+          </div>
+          <div class="text-xs font-semibold tracking-tight">Capítulo ${e}</div>
+        `;
+
+        card.addEventListener('click', () => {
+          state.episode = e;
+          renderEpisodesGrid();
+          updateGenerator();
+        });
+
+        episodesGrid.appendChild(card);
+      }
+    }
+
+    // Obtener episodios reales desde TMDB si está disponible
+    async function fetchSeasonEpisodeCount(tmdbId, seasonNum) {
+      try {
+        const res = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${seasonNum}?api_key=${API_KEY}&language=es-ES`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.episodes && data.episodes.length) {
+            state.episodesInSeason = data.episodes.length;
+          }
+        }
+      } catch(err) {
+        state.episodesInSeason = 12; // fallback
+      }
+      renderSeasonsPills();
+      renderEpisodesGrid();
+      updateGenerator();
+    }
 
     // Buscador TMDB en vivo
     let searchTimeout = null;
@@ -331,8 +421,22 @@
                 state.mediaId = String(item.id);
                 searchInput.value = title;
                 searchResults.classList.add('hidden');
+
+                // Si es serie, consultar total de temporadas
+                if (state.mediaType === 'tv') {
+                  try {
+                    const tvRes = await fetch(`https://api.themoviedb.org/3/tv/${item.id}?api_key=${API_KEY}&language=es-ES`);
+                    const tvData = await tvRes.json();
+                    if (tvData.number_of_seasons) {
+                      state.totalSeasons = tvData.number_of_seasons;
+                      state.season = 1;
+                      state.episode = 1;
+                    }
+                  } catch(e) {}
+                  fetchSeasonEpisodeCount(item.id, 1);
+                }
                 
-                // Intentar buscar el IMDb ID automáticamente para embed69
+                // Buscar IMDb ID automáticamente para embed69
                 try {
                   const detailRes = await fetch(`https://api.themoviedb.org/3/${tmdbType}/${item.id}/external_ids?api_key=${API_KEY}`);
                   const detailData = await detailRes.json();
@@ -354,7 +458,6 @@
       }, 400);
     });
 
-    // Ocultar resultados al hacer clic fuera
     document.addEventListener('click', (e) => {
       if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
         searchResults.classList.add('hidden');
@@ -442,7 +545,7 @@
       state.mediaType = 'movie';
       typeMovieBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition bg-brand-600 text-white shadow';
       typeTvBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white';
-      tvFields.classList.add('hidden');
+      tvSelectorSection.classList.add('hidden');
       updateGenerator();
     });
 
@@ -450,8 +553,8 @@
       state.mediaType = 'tv';
       typeTvBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition bg-brand-600 text-white shadow';
       typeMovieBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white';
-      tvFields.classList.remove('hidden');
-      updateGenerator();
+      tvSelectorSection.classList.remove('hidden');
+      fetchSeasonEpisodeCount(state.mediaId, state.season);
     });
 
     serverSelect.addEventListener('change', (e) => {
@@ -466,21 +569,15 @@
 
     mediaIdInput.addEventListener('input', (e) => {
       state.mediaId = e.target.value;
-      updateGenerator();
+      if (state.mediaType === 'tv') {
+        fetchSeasonEpisodeCount(state.mediaId, state.season);
+      } else {
+        updateGenerator();
+      }
     });
 
     imdbIdInput.addEventListener('input', (e) => {
       state.imdbId = e.target.value;
-      updateGenerator();
-    });
-
-    seasonInput.addEventListener('input', (e) => {
-      state.season = e.target.value;
-      updateGenerator();
-    });
-
-    episodeInput.addEventListener('input', (e) => {
-      state.episode = e.target.value;
       updateGenerator();
     });
 
@@ -549,13 +646,13 @@
     resetFormBtn.addEventListener('click', () => {
       mediaIdInput.value = '550';
       imdbIdInput.value = 'tt0137523';
-      seasonInput.value = '1';
-      episodeInput.value = '1';
       searchInput.value = '';
       state.mediaId = '550';
       state.imdbId = 'tt0137523';
       state.season = 1;
       state.episode = 1;
+      state.totalSeasons = 1;
+      state.episodesInSeason = 12;
       updateGenerator();
     });
 
