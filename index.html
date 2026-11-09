@@ -44,7 +44,7 @@
             <h1 class="text-xl font-bold tracking-tight text-white">CineWick</h1>
             <span class="text-[10px] bg-brand-500/20 text-brand-400 border border-brand-500/30 px-2 py-0.5 rounded-full font-mono">cinewick.shop</span>
           </div>
-          <p class="text-xs text-slate-400">Generador Embed con pasarela PlayerWeb Hash Base64</p>
+          <p class="text-xs text-slate-400">Generador Embed con pasarela PlayerWeb (Latino/Español)</p>
         </div>
       </div>
       <div class="flex items-center space-x-2">
@@ -77,22 +77,21 @@
           </button>
         </div>
 
-        <!-- Servidor / Motor -->
+        <!-- Servidor / Motor Latino -->
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Servidor de Contenido (Base64)</label>
+          <label class="block text-xs font-medium text-slate-400 mb-1">Servidor de Contenido (Latino / Español)</label>
           <select id="serverSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-200">
-            <option value="vidsrc_to">VidSrc.to</option>
-            <option value="vidsrc_me">VidSrc.me</option>
-            <option value="embed_su">SuperEmbed / EmbedSU</option>
-            <option value="embed2">2Embed</option>
+            <option value="vimeus">Vimeus (Recomendado Latino)</option>
+            <option value="embed69">Embed69 (Requiere IMDb ID)</option>
+            <option value="unlimplay">Unlimplay (TMDB ID)</option>
           </select>
         </div>
 
         <!-- IDs Input Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-3" id="standardInputs">
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">TMDB ID o IMDb ID</label>
-            <input type="text" id="mediaIdInput" value="550" placeholder="Ej: 550 o tt0137523" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200 font-mono">
+            <label id="mediaIdLabel" class="block text-xs font-medium text-slate-400 mb-1">TMDB ID</label>
+            <input type="text" id="mediaIdInput" value="550" placeholder="Ej: 550" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200 font-mono">
           </div>
           
           <!-- TV Fields (Season & Episode) -->
@@ -107,6 +106,12 @@
             </div>
           </div>
         </div>
+
+        <!-- Botón para forzar actualización/reinicio de Vista Previa -->
+        <button id="refreshPreviewBtn" type="button" class="w-full bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/30 font-medium text-xs py-2.5 rounded-xl transition flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          <span>Cargar / Reiniciar Vista Previa</span>
+        </button>
       </div>
 
       <!-- Player Customization -->
@@ -171,7 +176,7 @@
       <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold uppercase tracking-wider text-brand-400 flex items-center">
-            <i class="fa-solid fa-eye mr-2"></i> Vista Previa (PlayerWeb Base64)
+            <i class="fa-solid fa-eye mr-2"></i> Vista Previa (PlayerWeb)
           </h2>
           <!-- Device Toggle -->
           <div class="flex items-center space-x-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
@@ -228,10 +233,11 @@
 
   <script>
     const PLAYERWEB_BASE = "https://jcasastech88-tech.github.io/playerweb/";
+    const VIMEUS_PARAMS = "view_key=Gy5wv-mGF6Ao_Sim1TU7MPrLGsRkiGeiuWCiuVsmbu8&title=Cinewick&theme=blue&loader=v1&playUI=v3&splash=v2&autoplay=1";
 
     const state = {
       mediaType: 'movie',
-      server: 'vidsrc_to',
+      server: 'vimeus',
       mediaId: '550',
       season: 1,
       episode: 1,
@@ -251,8 +257,10 @@
     const tvFields = document.getElementById('tvFields');
     const serverSelect = document.getElementById('serverSelect');
     const mediaIdInput = document.getElementById('mediaIdInput');
+    const mediaIdLabel = document.getElementById('mediaIdLabel');
     const seasonInput = document.getElementById('seasonInput');
     const episodeInput = document.getElementById('episodeInput');
+    const refreshPreviewBtn = document.getElementById('refreshPreviewBtn');
     const responsiveToggle = document.getElementById('responsiveToggle');
     const aspectRatioGroup = document.getElementById('aspectRatioGroup');
     const fixedSizeGroup = document.getElementById('fixedSizeGroup');
@@ -272,34 +280,35 @@
     const deviceMobileBtn = document.getElementById('deviceMobileBtn');
     const resetFormBtn = document.getElementById('resetFormBtn');
 
+    // Construcción de la URL del Servidor en Español / Latino
     function getRawServerUrl() {
       const id = state.mediaId.trim();
       const s = state.season;
       const e = state.episode;
 
       switch(state.server) {
-        case 'vidsrc_to':
-          return state.mediaType === 'movie' 
-            ? `https://vidsrc.to/embed/movie/${id}`
-            : `https://vidsrc.to/embed/tv/${id}/${s}/${e}`;
-        case 'vidsrc_me':
+        case 'vimeus':
           return state.mediaType === 'movie'
-            ? `https://vidsrc.me/embed/movie?imdb=${id}`
-            : `https://vidsrc.me/embed/tv?imdb=${id}&season=${s}&episode=${e}`;
-        case 'embed_su':
+            ? `https://vimeus.net/e/movie?tmdb=${id}&${VIMEUS_PARAMS}`
+            : `https://vidsrc.net/e/serie?tmdb=${id}&se=${s}&ep=${e}&${VIMEUS_PARAMS}`;
+
+        case 'embed69':
+          const epStr = String(e).padStart(2, '0');
           return state.mediaType === 'movie'
-            ? `https://embed.su/embed/movie/${id}`
-            : `https://embed.su/embed/tv/${id}/${s}/${e}`;
-        case 'embed2':
+            ? `https://embed69.org/f/${id}`
+            : `https://embed69.org/f/${id}-${s}x${epStr}`;
+
+        case 'unlimplay':
           return state.mediaType === 'movie'
-            ? `https://www.2embed.cc/embed/${id}`
-            : `https://www.2embed.cc/embedtv/${id}&s=${s}&e=${e}`;
+            ? `https://unlimplay.com/f/embed/movie/${id}`
+            : `https://unlimplay.com/f/embed/tv/${id}/${s}/${e}`;
+
         default:
           return '';
       }
     }
 
-    // Construcción exacta de la URL con Base64 y Hash compatible con playerweb
+    // Hash Base64 compatible con playerweb
     function buildPlayerWebUrl() {
       const rawUrl = getRawServerUrl();
       const b64Url = btoa(rawUrl);
@@ -317,6 +326,7 @@
     function updateGenerator() {
       const playerUrl = buildPlayerWebUrl();
 
+      // Recarga el iframe de vista previa
       previewIframe.src = playerUrl;
 
       if (state.responsive) {
@@ -345,6 +355,7 @@
       }
     }
 
+    // Event Listeners
     typeMovieBtn.addEventListener('click', () => {
       state.mediaType = 'movie';
       typeMovieBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition bg-brand-600 text-white shadow';
@@ -363,6 +374,19 @@
 
     serverSelect.addEventListener('change', (e) => {
       state.server = e.target.value;
+      if (state.server === 'embed69') {
+        mediaIdLabel.innerText = "IMDb ID (ej: tt0137523)";
+        if (state.mediaId === '550') {
+          mediaIdInput.value = 'tt0137523';
+          state.mediaId = 'tt0137523';
+        }
+      } else {
+        mediaIdLabel.innerText = "TMDB ID";
+        if (state.mediaId === 'tt0137523') {
+          mediaIdInput.value = '550';
+          state.mediaId = '550';
+        }
+      }
       updateGenerator();
     });
 
@@ -379,6 +403,14 @@
     episodeInput.addEventListener('input', (e) => {
       state.episode = e.target.value;
       updateGenerator();
+    });
+
+    // Botón manual de recarga de la vista previa
+    refreshPreviewBtn.addEventListener('click', () => {
+      previewIframe.src = '';
+      setTimeout(() => {
+        updateGenerator();
+      }, 50);
     });
 
     responsiveToggle.addEventListener('change', (e) => {
