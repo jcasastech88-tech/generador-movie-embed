@@ -231,8 +231,6 @@
     const state = {
       mediaType: 'movie',
       activeServer: 'vimeus',
-      mediaId: '550',
-      imdbId: 'tt0137523',
       season: 1,
       episode: 1,
       totalSeasons: 1,
@@ -286,7 +284,7 @@
         btn.addEventListener('click', () => {
           state.season = s;
           state.episode = 1; 
-          fetchSeasonEpisodeCount(state.mediaId, s);
+          fetchSeasonEpisodeCount(mediaIdInput.value.trim(), s);
         });
         seasonsPillsContainer.appendChild(btn);
       }
@@ -340,6 +338,7 @@
       updateGenerator();
     }
 
+    // Buscador TMDB en vivo
     let searchTimeout = null;
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.trim();
@@ -366,7 +365,6 @@
               
               div.addEventListener('click', async () => {
                 mediaIdInput.value = item.id;
-                state.mediaId = String(item.id);
                 searchInput.value = title;
                 searchResults.classList.add('hidden');
 
@@ -381,8 +379,6 @@
                     }
                   } catch(e) {}
                   fetchSeasonEpisodeCount(item.id, 1);
-                } else {
-                  updateGenerator();
                 }
                 
                 try {
@@ -390,9 +386,11 @@
                   const detailData = await detailRes.json();
                   if (detailData && detailData.imdb_id) {
                     imdbIdInput.value = detailData.imdb_id;
-                    state.imdbId = detailData.imdb_id;
                   }
                 } catch(err) {}
+
+                // Forzar actualización inmediata al hacer clic en el resultado de búsqueda
+                updateGenerator();
               });
               searchResults.appendChild(div);
             });
@@ -411,8 +409,8 @@
     });
 
     function getPlayerWebUrlForServer(srvKey) {
-      const mainId = mediaIdInput.value.trim() || state.mediaId;
-      const imdb = imdbIdInput.value.trim() || state.imdbId;
+      const mainId = mediaIdInput.value.trim() || '550';
+      const imdb = imdbIdInput.value.trim() || 'tt0137523';
       const s = state.season;
       const e = state.episode;
       let rawUrl = '';
@@ -447,13 +445,13 @@
     }
 
     function updateGenerator() {
-      // Sincronizar estados desde los inputs manuales antes de refrescar
-      state.mediaId = mediaIdInput.value.trim() || state.mediaId;
-      state.imdbId = imdbIdInput.value.trim() || state.imdbId;
+      const urlVimeus = getPlayerWebUrlForServer('vimeus');
+      const urlEmbed69 = getPlayerWebUrlForServer('embed69');
+      const urlUnlimplay = getPlayerWebUrlForServer('unlimplay');
 
-      document.getElementById('previewIframe-vimeus').src = getPlayerWebUrlForServer('vimeus');
-      document.getElementById('previewIframe-embed69').src = getPlayerWebUrlForServer('embed69');
-      document.getElementById('previewIframe-unlimplay').src = getPlayerWebUrlForServer('unlimplay');
+      document.getElementById('previewIframe-vimeus').src = urlVimeus;
+      document.getElementById('previewIframe-embed69').src = urlEmbed69;
+      document.getElementById('previewIframe-unlimplay').src = urlUnlimplay;
 
       const selectedUrl = getPlayerWebUrlForServer(state.activeServer);
 
@@ -469,6 +467,7 @@
       typeMovieBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition bg-brand-600 text-white shadow';
       typeTvBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white';
       tvSelectorSection.classList.add('hidden');
+      updateGenerator();
     });
 
     typeTvBtn.addEventListener('click', () => {
@@ -476,10 +475,9 @@
       typeTvBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition bg-brand-600 text-white shadow';
       typeMovieBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white';
       tvSelectorSection.classList.remove('hidden');
-      fetchSeasonEpisodeCount(mediaIdInput.value, state.season);
+      fetchSeasonEpisodeCount(mediaIdInput.value.trim(), state.season);
     });
 
-    // Acción del botón manual de actualización
     manualRefreshBtn.addEventListener('click', () => {
       updateGenerator();
     });
@@ -502,8 +500,6 @@
       mediaIdInput.value = '550';
       imdbIdInput.value = 'tt0137523';
       searchInput.value = '';
-      state.mediaId = '550';
-      state.imdbId = 'tt0137523';
       state.season = 1;
       state.episode = 1;
       state.totalSeasons = 1;
