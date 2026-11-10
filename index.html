@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CineWick - Generador con Modo Claro/Oscuro y Refresco Manual</title>
+  <title>CineWick - Generador Master de Embeds</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -25,13 +25,15 @@
   </script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
+    .aspect-21-9 { aspect-ratio: 21 / 9; }
     .aspect-16-9 { aspect-ratio: 16 / 9; }
+    .aspect-4-3 { aspect-ratio: 4 / 3; }
   </style>
 </head>
-<body class="bg-slate-950 dark:bg-slate-950 text-slate-100 min-h-screen font-sans antialiased flex flex-col transition-colors duration-300">
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased flex flex-col">
 
   <!-- Header -->
-  <header class="border-b border-slate-800 bg-slate-900/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="bg-gradient-to-tr from-brand-600 to-indigo-400 p-2.5 rounded-xl shadow-lg shadow-brand-500/20">
@@ -39,18 +41,13 @@
         </div>
         <div>
           <div class="flex items-center space-x-2">
-            <h1 class="text-xl font-bold tracking-tight text-white dark:text-white">CineWick</h1>
+            <h1 class="text-xl font-bold tracking-tight text-white">CineWick</h1>
             <span class="text-[10px] bg-brand-500/20 text-brand-400 border border-brand-500/30 px-2 py-0.5 rounded-full font-mono">cinewick.shop</span>
           </div>
-          <p class="text-xs text-slate-400">Generador Master con Modo Claro/Oscuro</p>
+          <p class="text-xs text-slate-400">Generador Master con actualización automática en vivo</p>
         </div>
       </div>
-      <div class="flex items-center space-x-3">
-        <!-- Botón Modo Claro / Oscuro -->
-        <button id="themeToggleBtn" class="text-xs px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 transition text-slate-200 flex items-center space-x-1.5">
-          <i id="themeIcon" class="fa-solid fa-sun text-amber-400"></i>
-          <span id="themeText">Modo Claro</span>
-        </button>
+      <div class="flex items-center space-x-2">
         <button id="resetFormBtn" class="text-xs px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 transition text-slate-300">
           <i class="fa-solid fa-rotate-left mr-1"></i> Reiniciar
         </button>
@@ -65,13 +62,13 @@
     <section class="lg:col-span-5 space-y-6">
       
       <!-- Content Type & Identifiers -->
-      <div class="bg-slate-900 dark:bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
         <h2 class="text-sm font-semibold uppercase tracking-wider text-brand-400 flex items-center">
           <i class="fa-solid fa-clapperboard mr-2"></i> Configuración del Player
         </h2>
         
         <!-- Type Selection Buttons -->
-        <div class="grid grid-cols-2 gap-2 bg-slate-950 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-800/80">
+        <div class="grid grid-cols-2 gap-2 bg-slate-950 p-1.5 rounded-xl border border-slate-800/80">
           <button id="typeMovieBtn" type="button" class="py-2 px-4 rounded-lg text-sm font-medium transition bg-brand-600 text-white shadow">
             <i class="fa-solid fa-film mr-2"></i> Película
           </button>
@@ -84,7 +81,7 @@
         <div class="relative">
           <label class="block text-xs font-medium text-slate-400 mb-1">Buscar por Nombre (TMDB)</label>
           <div class="relative">
-            <input type="text" id="searchInput" placeholder="Buscar título en TMDB..." class="w-full bg-slate-950 dark:bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-200">
+            <input type="text" id="searchInput" placeholder="Buscar título en TMDB..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-200">
             <span class="absolute right-3 top-3 text-slate-500 text-xs"><i class="fa-solid fa-magnifying-glass"></i></span>
           </div>
           <!-- Resultados flotantes -->
@@ -93,8 +90,8 @@
 
         <!-- Servidor / Motor Latino -->
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1">Servidor de Contenido</label>
-          <select id="serverSelect" class="w-full bg-slate-950 dark:bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-200">
+          <label class="block text-xs font-medium text-slate-400 mb-1">Servidor de Contenido (Latino / Español)</label>
+          <select id="serverSelect" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-brand-500 text-slate-200">
             <option value="vimeus">Vimeus (Recomendado Latino)</option>
             <option value="embed69">Embed69 (Usa IMDb ID)</option>
             <option value="unlimplay">Unlimplay (TMDB ID)</option>
@@ -104,20 +101,26 @@
         <!-- IDs Input Grid -->
         <div class="grid grid-cols-1 gap-3">
           <div>
-            <label class="block text-xs font-medium text-slate-400 mb-1">TMDB ID (Para Hash J.Casas)</label>
-            <input type="text" id="mediaIdInput" value="550" placeholder="Ej: 550" class="w-full bg-slate-950 dark:bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200 font-mono">
+            <label id="mediaIdLabel" class="block text-xs font-medium text-slate-400 mb-1">TMDB ID</label>
+            <input type="text" id="mediaIdInput" value="550" placeholder="Ej: 550" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200 font-mono">
           </div>
 
-          <!-- Campo Extra para IMDb ID -->
+          <!-- Campo Extra para IMDb ID (Solo visible si se selecciona Embed69) -->
           <div id="imdbInputContainer" class="hidden">
-            <label class="block text-xs font-medium text-brand-400 mb-1">IMDb ID (Para Servidor Embed69)</label>
-            <input type="text" id="imdbIdInput" value="tt0137523" placeholder="tt0137523" class="w-full bg-slate-950 dark:bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200 font-mono">
+            <label class="block text-xs font-medium text-brand-400 mb-1">IMDb ID para Embed69 (ej: tt0137523)</label>
+            <input type="text" id="imdbIdInput" placeholder="tt0137523" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200 font-mono">
           </div>
         </div>
+
+        <!-- Botón para forzar actualización/reinicio de Vista Previa -->
+        <button id="refreshPreviewBtn" type="button" class="w-full bg-slate-800 hover:bg-slate-700 text-brand-400 border border-brand-500/30 font-medium text-xs py-2.5 rounded-xl transition flex items-center justify-center space-x-2">
+          <i class="fa-solid fa-arrows-rotate"></i>
+          <span>Cargar / Reiniciar Vista Previa</span>
+        </button>
       </div>
 
       <!-- SECCIÓN DE TEMPORADAS Y EPISODIOS -->
-      <div id="tvSelectorSection" class="hidden bg-slate-900 dark:bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm">
+      <div id="tvSelectorSection" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold uppercase tracking-wider text-brand-400 flex items-center">
             <i class="fa-solid fa-layer-group mr-2"></i> Temporadas y Episodios
@@ -127,14 +130,68 @@
 
         <!-- Selector Horizontal de Temporadas -->
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">Temporada</label>
+          <label class="block text-xs font-medium text-slate-400 mb-1.5">Seleccionar Temporada</label>
           <div id="seasonsPillsContainer" class="flex space-x-2 overflow-x-auto pb-2 scrollbar-thin"></div>
         </div>
 
-        <!-- Grid de Episodios -->
+        <!-- Grid Elegante de Tarjetas de Episodios -->
         <div>
-          <label class="block text-xs font-medium text-slate-400 mb-1.5">Seleccionar Capítulo</label>
-          <div id="episodesGrid" class="grid grid-cols-4 gap-2 max-h-48 overflow-y-auto pr-1"></div>
+          <label class="block text-xs font-medium text-slate-400 mb-1.5">Episodio Activo</label>
+          <div id="episodesGrid" class="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-64 overflow-y-auto pr-1"></div>
+        </div>
+      </div>
+
+      <!-- Player Customization -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+        <h2 class="text-sm font-semibold uppercase tracking-wider text-brand-400 flex items-center">
+          <i class="fa-solid fa-sliders mr-2"></i> Dimensiones y Ajustes
+        </h2>
+
+        <!-- Responsiveness Toggle -->
+        <div class="flex items-center justify-between py-1">
+          <span class="text-xs font-medium text-slate-300">Contenedor Responsivo</span>
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" id="responsiveToggle" class="sr-only peer" checked>
+            <div class="w-11 h-6 bg-slate-950 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+          </label>
+        </div>
+
+        <!-- Aspect Ratio Options -->
+        <div id="aspectRatioGroup">
+          <label class="block text-xs font-medium text-slate-400 mb-1">Proporción de Aspecto</label>
+          <div class="grid grid-cols-3 gap-2">
+            <button type="button" data-aspect="16-9" class="aspect-btn active py-1.5 rounded-lg border text-xs font-medium border-brand-500 bg-brand-500/10 text-brand-400">16:9 Standard</button>
+            <button type="button" data-aspect="21-9" class="aspect-btn py-1.5 rounded-lg border text-xs font-medium border-slate-800 bg-slate-950 text-slate-400">21:9 Cinema</button>
+            <button type="button" data-aspect="4-3" class="aspect-btn py-1.5 rounded-lg border text-xs font-medium border-slate-800 bg-slate-950 text-slate-400">4:3 TV</button>
+          </div>
+        </div>
+
+        <!-- Fixed Size Inputs -->
+        <div id="fixedSizeGroup" class="hidden grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Ancho (Width)</label>
+            <input type="text" id="widthInput" value="100%" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Alto (Height)</label>
+            <input type="text" id="heightInput" value="500px" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500 text-slate-200">
+          </div>
+        </div>
+
+        <!-- Checkbox Options -->
+        <div class="space-y-2 pt-2 border-t border-slate-800/80">
+          <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="allowFullscreenCheck" checked class="rounded bg-slate-950 border-slate-800 text-brand-600 focus:ring-brand-500">
+            <span>Permitir Pantalla Completa (allowfullscreen)</span>
+          </label>
+          <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="lazyLoadingCheck" checked class="rounded bg-slate-950 border-slate-800 text-brand-600 focus:ring-brand-500">
+            <span>Carga Diferida (loading="lazy")</span>
+          </label>
+          <label class="flex items-center space-x-2 text-xs text-slate-300 cursor-pointer">
+            <input type="checkbox" id="sandboxCheck" class="rounded bg-slate-950 border-slate-800 text-brand-600 focus:ring-brand-500">
+            <span>Activar Sandbox Básico (Anti-Popups)</span>
+          </label>
         </div>
       </div>
     </section>
@@ -143,41 +200,32 @@
     <section class="lg:col-span-7 space-y-6 flex flex-col">
       
       <!-- Preview Container -->
-      <div class="bg-slate-900 dark:bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
         <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold uppercase tracking-wider text-brand-400 flex items-center">
             <i class="fa-solid fa-eye mr-2"></i> Vista Previa (PlayerWeb)
           </h2>
-          
-          <div class="flex items-center space-x-2">
-            <!-- Botón manual para actualizar vista previa -->
-            <button id="manualRefreshBtn" type="button" class="bg-brand-600 hover:bg-brand-500 text-white text-xs font-medium px-3 py-1.5 rounded-xl transition shadow flex items-center space-x-1.5">
-              <i class="fa-solid fa-arrows-rotate"></i>
-              <span>Actualizar Vista Previa</span>
+          <!-- Device Toggle -->
+          <div class="flex items-center space-x-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+            <button id="deviceDesktopBtn" title="Escritorio" class="p-1.5 text-xs rounded text-brand-400 bg-slate-800">
+              <i class="fa-solid fa-desktop"></i>
             </button>
-            
-            <!-- Device Toggle -->
-            <div class="flex items-center space-x-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
-              <button id="deviceDesktopBtn" title="Escritorio" class="p-1.5 text-xs rounded text-brand-400 bg-slate-800">
-                <i class="fa-solid fa-desktop"></i>
-              </button>
-              <button id="deviceMobileBtn" title="Móvil" class="p-1.5 text-xs rounded text-slate-400 hover:text-white">
-                <i class="fa-solid fa-mobile-screen-button"></i>
-              </button>
-            </div>
+            <button id="deviceMobileBtn" title="Móvil" class="p-1.5 text-xs rounded text-slate-400 hover:text-white">
+              <i class="fa-solid fa-mobile-screen-button"></i>
+            </button>
           </div>
         </div>
 
-        <!-- Preview Screen Wrapper -->
+        <!-- Responsive Preview Screen Wrapper -->
         <div id="previewWrapper" class="w-full transition-all duration-300 mx-auto">
-          <div class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden relative aspect-16-9">
+          <div id="previewContainer" class="bg-slate-950 border border-slate-800 rounded-xl overflow-hidden relative min-h-[220px] flex items-center justify-center">
             <iframe id="previewIframe" src="" class="w-full h-full border-0" allowfullscreen></iframe>
           </div>
         </div>
       </div>
 
       <!-- Generated Code Output -->
-      <div class="bg-slate-900 dark:bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 flex-1 flex flex-col shadow-sm">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 flex-1 flex flex-col">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-3">
             <h2 class="text-sm font-semibold uppercase tracking-wider text-brand-400 flex items-center">
@@ -218,13 +266,21 @@
     const state = {
       mediaType: 'movie',
       server: 'vimeus',
+      mediaId: '550',
+      imdbId: 'tt0137523',
       season: 1,
       episode: 1,
       totalSeasons: 1,
       episodesInSeason: 12,
+      responsive: true,
+      aspectRatio: '16-9',
+      width: '100%',
+      height: '500px',
+      allowFullscreen: true,
+      lazyLoading: true,
+      sandbox: false,
       format: 'html',
-      device: 'desktop',
-      isDark: true
+      device: 'desktop'
     };
 
     const typeMovieBtn = document.getElementById('typeMovieBtn');
@@ -239,8 +295,17 @@
     const imdbIdInput = document.getElementById('imdbIdInput');
     const searchInput = document.getElementById('searchInput');
     const searchResults = document.getElementById('searchResults');
-    const manualRefreshBtn = document.getElementById('manualRefreshBtn');
+    const refreshPreviewBtn = document.getElementById('refreshPreviewBtn');
+    const responsiveToggle = document.getElementById('responsiveToggle');
+    const aspectRatioGroup = document.getElementById('aspectRatioGroup');
+    const fixedSizeGroup = document.getElementById('fixedSizeGroup');
+    const widthInput = document.getElementById('widthInput');
+    const heightInput = document.getElementById('heightInput');
+    const allowFullscreenCheck = document.getElementById('allowFullscreenCheck');
+    const lazyLoadingCheck = document.getElementById('lazyLoadingCheck');
+    const sandboxCheck = document.getElementById('sandboxCheck');
     const previewIframe = document.getElementById('previewIframe');
+    const previewContainer = document.getElementById('previewContainer');
     const previewWrapper = document.getElementById('previewWrapper');
     const codeOutput = document.getElementById('codeOutput');
     const copyCodeBtn = document.getElementById('copyCodeBtn');
@@ -249,26 +314,8 @@
     const deviceDesktopBtn = document.getElementById('deviceDesktopBtn');
     const deviceMobileBtn = document.getElementById('deviceMobileBtn');
     const resetFormBtn = document.getElementById('resetFormBtn');
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    const themeIcon = document.getElementById('themeIcon');
-    const themeText = document.getElementById('themeText');
 
-    // Lógica para alternar Tema Claro / Oscuro
-    themeToggleBtn.addEventListener('click', () => {
-      state.isDark = !state.isDark;
-      const htmlEl = document.documentElement;
-      if (state.isDark) {
-        htmlEl.classList.add('dark');
-        themeIcon.className = 'fa-solid fa-sun text-amber-400';
-        themeText.innerText = 'Modo Claro';
-      } else {
-        htmlEl.classList.remove('dark');
-        themeIcon.className = 'fa-solid fa-moon text-indigo-300';
-        themeText.innerText = 'Modo Oscuro';
-      }
-    });
-
-    // Renderizar Temporadas
+    // Renderizar selector de Temporadas
     function renderSeasonsPills() {
       seasonsPillsContainer.innerHTML = '';
       for (let s = 1; s <= state.totalSeasons; s++) {
@@ -284,34 +331,35 @@
         btn.addEventListener('click', () => {
           state.season = s;
           state.episode = 1; 
-          fetchSeasonEpisodeCount(mediaIdInput.value.trim(), s);
+          fetchSeasonEpisodeCount(state.mediaId, s);
         });
         seasonsPillsContainer.appendChild(btn);
       }
     }
 
-    // Renderizar Grid de Episodios
+    // Renderizar Grid de Episodios con actualización automática en vivo
     function renderEpisodesGrid() {
       episodesGrid.innerHTML = '';
-      episodesCountBadge.innerText = `${state.episodesInSeason} Eps`;
+      episodesCountBadge.innerText = `${state.episodesInSeason} Episodios`;
 
       for (let e = 1; e <= state.episodesInSeason; e++) {
         const isActive = e === Number(state.episode);
         const card = document.createElement('div');
-        card.className = `p-2 rounded-xl border cursor-pointer transition flex flex-col justify-between space-y-1 ${
+        card.className = `p-2.5 rounded-xl border cursor-pointer transition flex flex-col justify-between space-y-2 ${
           isActive 
-            ? 'border-brand-500 bg-brand-600/20 text-white shadow-md' 
+            ? 'border-brand-500 bg-brand-600/20 text-white shadow-md shadow-brand-500/10' 
             : 'border-slate-800/80 bg-slate-950 text-slate-300 hover:border-slate-700 hover:bg-slate-900'
         }`;
 
         card.innerHTML = `
           <div class="flex items-center justify-between">
-            <span class="text-[9px] font-mono font-medium ${isActive ? 'text-brand-300' : 'text-slate-500'}">E${e}</span>
-            ${isActive ? '<i class="fa-solid fa-circle-play text-brand-400 text-[10px] animate-pulse"></i>' : ''}
+            <span class="text-[10px] font-mono font-medium ${isActive ? 'text-brand-300' : 'text-slate-500'}">EP ${String(e).padStart(2, '0')}</span>
+            ${isActive ? '<i class="fa-solid fa-circle-play text-brand-400 text-xs animate-pulse"></i>' : ''}
           </div>
-          <div class="text-[11px] font-semibold truncate">Cap ${e}</div>
+          <div class="text-xs font-semibold tracking-tight">Capítulo ${e}</div>
         `;
 
+        // Al hacer clic actualiza de inmediato el estado, la vista previa y el código generado
         card.addEventListener('click', () => {
           state.episode = e;
           renderEpisodesGrid();
@@ -336,10 +384,10 @@
       }
       renderSeasonsPills();
       renderEpisodesGrid();
-      updateGenerator();
+      updateGenerator(); // Actualiza preview automáticamente al cambiar de temporada
     }
 
-    // Buscador TMDB en vivo
+    // Buscador TMDB en vivo con actualización automática inmediata
     let searchTimeout = null;
     searchInput.addEventListener('input', (e) => {
       const q = e.target.value.trim();
@@ -364,8 +412,10 @@
               const date = (item.release_date || item.first_air_date || '').split('-')[0];
               div.innerHTML = `<span>${title} (${date})</span> <span class="font-mono text-brand-400 text-[10px]">ID: ${item.id}</span>`;
               
+              // Al seleccionar una película o serie de la lista:
               div.addEventListener('click', async () => {
                 mediaIdInput.value = item.id;
+                state.mediaId = String(item.id);
                 searchInput.value = title;
                 searchResults.classList.add('hidden');
 
@@ -380,6 +430,8 @@
                     }
                   } catch(e) {}
                   fetchSeasonEpisodeCount(item.id, 1);
+                } else {
+                  updateGenerator(); // Actualiza automáticamente la vista previa de la película seleccionada
                 }
                 
                 try {
@@ -387,10 +439,9 @@
                   const detailData = await detailRes.json();
                   if (detailData && detailData.imdb_id) {
                     imdbIdInput.value = detailData.imdb_id;
+                    state.imdbId = detailData.imdb_id;
                   }
                 } catch(err) {}
-
-                updateGenerator();
               });
               searchResults.appendChild(div);
             });
@@ -408,9 +459,8 @@
       }
     });
 
-    function buildPlayerWebUrl() {
-      const mainId = mediaIdInput.value.trim() || '550';
-      const imdb = imdbIdInput.value.trim() || 'tt0137523';
+    function getRawServerUrlAndHashId() {
+      const mainId = state.mediaId.trim();
       const s = state.season;
       const e = state.episode;
       let rawUrl = '';
@@ -423,6 +473,7 @@
           break;
 
         case 'embed69':
+          const imdb = state.imdbId.trim();
           const epStr = String(e).padStart(2, '0');
           rawUrl = state.mediaType === 'movie'
             ? `https://embed69.org/f/${imdb}`
@@ -436,11 +487,19 @@
           break;
       }
 
+      return { rawUrl, hashId: mainId };
+    }
+
+    function buildPlayerWebUrl() {
+      const { rawUrl, hashId } = getRawServerUrlAndHashId();
       const b64Url = btoa(rawUrl);
+      
       if (state.mediaType === 'movie') {
-        return `${PLAYERWEB_BASE}#movie-${mainId}-${b64Url}`;
+        return `${PLAYERWEB_BASE}#movie-${hashId}-${b64Url}`;
       } else {
-        return `${PLAYERWEB_BASE}#tv-${mainId}-${s}-${e}-${b64Url}`;
+        const s = state.season;
+        const e = state.episode;
+        return `${PLAYERWEB_BASE}#tv-${hashId}-${s}-${e}-${b64Url}`;
       }
     }
 
@@ -448,8 +507,27 @@
       const playerUrl = buildPlayerWebUrl();
       previewIframe.src = playerUrl;
 
+      if (state.responsive) {
+        previewContainer.className = `bg-slate-950 border border-slate-800 rounded-xl overflow-hidden relative aspect-${state.aspectRatio}`;
+        previewContainer.style.height = 'auto';
+        previewContainer.style.width = '100%';
+      } else {
+        previewContainer.className = `bg-slate-950 border border-slate-800 rounded-xl overflow-hidden relative`;
+        previewContainer.style.width = state.width;
+        previewContainer.style.height = state.height;
+      }
+
       if (state.format === 'html') {
-        codeOutput.value = `<!-- CineWick Player Embed -->\n<div style="position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; border-radius: 8px;">\n  <iframe src="${playerUrl}" style="position: absolute; top:0; left:0; width:100%; height:100%; border:0;" allowfullscreen loading="lazy"></iframe>\n</div>`;
+        const allowFsAttr = state.allowFullscreen ? ' allowfullscreen' : '';
+        const lazyAttr = state.lazyLoading ? ' loading="lazy"' : '';
+        const sandboxAttr = state.sandbox ? ' sandbox="allow-scripts allow-same-origin allow-forms"' : '';
+
+        if (state.responsive) {
+          const ratioClass = state.aspectRatio === '21-9' ? '21/9' : (state.aspectRatio === '4-3' ? '4/3' : '16/9');
+          codeOutput.value = `<!-- CineWick Player Embed -->\n<div style="position: relative; width: 100%; aspect-ratio: ${ratioClass}; overflow: hidden; border-radius: 8px;">\n  <iframe src="${playerUrl}" style="position: absolute; top:0; left:0; width:100%; height:100%; border:0;"${allowFsAttr}${lazyAttr}${sandboxAttr}></iframe>\n</div>`;
+        } else {
+          codeOutput.value = `<!-- CineWick Player Embed -->\n<iframe src="${playerUrl}" width="${state.width}" height="${state.height}" style="border:0;"${allowFsAttr}${lazyAttr}${sandboxAttr}></iframe>`;
+        }
       } else {
         codeOutput.value = `[![Ver en CineWick](https://img.shields.io/badge/CineWick-Ver_Reproductor-4f46e5?style=for-the-badge&logo=playstation)](${playerUrl})`;
       }
@@ -468,7 +546,7 @@
       typeTvBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition bg-brand-600 text-white shadow';
       typeMovieBtn.className = 'py-2 px-4 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white';
       tvSelectorSection.classList.remove('hidden');
-      fetchSeasonEpisodeCount(mediaIdInput.value.trim(), state.season);
+      fetchSeasonEpisodeCount(state.mediaId, state.season);
     });
 
     serverSelect.addEventListener('change', (e) => {
@@ -481,10 +559,53 @@
       updateGenerator();
     });
 
-    // Botón manual para actualizar vista previa
-    manualRefreshBtn.addEventListener('click', () => {
+    mediaIdInput.addEventListener('input', (e) => {
+      state.mediaId = e.target.value;
+      if (state.mediaType === 'tv') {
+        fetchSeasonEpisodeCount(state.mediaId, state.season);
+      } else {
+        updateGenerator();
+      }
+    });
+
+    imdbIdInput.addEventListener('input', (e) => {
+      state.imdbId = e.target.value;
       updateGenerator();
     });
+
+    refreshPreviewBtn.addEventListener('click', () => {
+      previewIframe.src = '';
+      setTimeout(() => { updateGenerator(); }, 50);
+    });
+
+    responsiveToggle.addEventListener('change', (e) => {
+      state.responsive = e.target.checked;
+      if (state.responsive) {
+        aspectRatioGroup.classList.remove('hidden');
+        fixedSizeGroup.classList.add('hidden');
+      } else {
+        aspectRatioGroup.classList.add('hidden');
+        fixedSizeGroup.classList.remove('hidden');
+      }
+      updateGenerator();
+    });
+
+    document.querySelectorAll('.aspect-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.aspect-btn').forEach(b => {
+          b.className = 'aspect-btn py-1.5 rounded-lg border text-xs font-medium border-slate-800 bg-slate-950 text-slate-400';
+        });
+        btn.className = 'aspect-btn active py-1.5 rounded-lg border text-xs font-medium border-brand-500 bg-brand-500/10 text-brand-400';
+        state.aspectRatio = btn.dataset.aspect;
+        updateGenerator();
+      });
+    });
+
+    widthInput.addEventListener('input', (e) => { state.width = e.target.value; updateGenerator(); });
+    heightInput.addEventListener('input', (e) => { state.height = e.target.value; updateGenerator(); });
+    allowFullscreenCheck.addEventListener('change', (e) => { state.allowFullscreen = e.target.checked; updateGenerator(); });
+    lazyLoadingCheck.addEventListener('change', (e) => { state.lazyLoading = e.target.checked; updateGenerator(); });
+    sandboxCheck.addEventListener('change', (e) => { state.sandbox = e.target.checked; updateGenerator(); });
 
     formatHtmlBtn.addEventListener('click', () => {
       state.format = 'html';
@@ -518,9 +639,8 @@
       mediaIdInput.value = '550';
       imdbIdInput.value = 'tt0137523';
       searchInput.value = '';
-      state.server = 'vimeus';
-      serverSelect.value = 'vimeus';
-      imdbInputContainer.classList.add('hidden');
+      state.mediaId = '550';
+      state.imdbId = 'tt0137523';
       state.season = 1;
       state.episode = 1;
       state.totalSeasons = 1;
@@ -538,7 +658,6 @@
       }, 2500);
     });
 
-    // Carga inicial
     updateGenerator();
   </script>
 </body>
